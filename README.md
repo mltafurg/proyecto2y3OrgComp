@@ -1,1 +1,7 @@
-# proyecto2OrgComp
+# Proyecto Organizacion de computadores
+
+
+## Proyecto 2
+
+
+## Proyecto 3
