@@ -1,15 +1,17 @@
-#Guía de Usuario: Hack Assembler
+# Guía de Usuario: Hack Assembler
 
-1. Requisitos para compilar el proyecto
+### Requisitos para compilar el proyecto
 
 deben tener:
 
-● Java Runtime Environment (JRE) o Java Development Kit (JDK) instalado.
+● Java Runtime Environment (JRE) o Java Development Kit (JDK) instalado. 
+
 ● Terminal de comandos (PowerShell, CMD o Bash).
+
 ● Los archivos compilados del proyecto (.class).
 
 
-2. Compilación del Proyecto
+###  Compilación del Proyecto
 
 Antes de utilizar la herramienta, asegúrese de compilar todas las clases de Java en el directorio
 src:
@@ -17,23 +19,27 @@ src:
 javac HackAssembler.java
 
 
-3. Modo Ensamblador (ASM a HACK)
+### Modo Ensamblador (ASM a HACK)
 
 Este modo traduce un archivo de lenguaje ensamblador (.asm) a un archivo binario ejecutable
 (.hack).
 
 Uso:
+
 java HackAssembler nombre_del_archivo.asm
 
-4. Modo Desensamblador (HACK a ASM)
+###  Modo Desensamblador (HACK a ASM)
 
 Realiza el proceso inverso, convirtiendo código binario (.hack) en código mnemónico legible
 (.asm).
 
 Uso:
+
 java HackAssembler -d nombre_del_archivo.hack
 
+
 Importante para tener en cuenta: 
+
 ● el uso de "-d" es obligatorio
 ● Los símbolos originales y comentarios no se recuperan, se usan direcciones numéricas
 (ejemplo: @16 en lugar de @variable).
