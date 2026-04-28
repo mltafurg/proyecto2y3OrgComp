@@ -1,10 +1,76 @@
-//IMPORTANTTT
-// seguimos la logica del ALU que aplicamos, donde zx, nx, zy, ny son 0 y no es 1. lo que permite 
-//que f tenga la posibilidad de elegir shift en izq o derecha dependiendo de si es 0 o 1. 
 
 
-dest=reg << 1 = 111 a 0 0 0 0 0 1 d1 d2 d3 j1 j2 j3  // desplazamiento a la izquierda
+================================================================================
+ DETECCIÓN DEL MODO SHIFT EN LA ALU
+================================================================================
+ 
+La ALU detecta que debe ejecutar un desplazamiento cuando se cumplen
+simultáneamente las siguientes condiciones sobre los bits de control:
+ 
+    zx = 0   (c1 = 0)  →  x no se pone a cero: se usa el valor original de D
+    nx = 0   (c2 = 0)  →  x no se niega
+    zy = 0   (c3 = 0)  →  y no se pone a cero
+    ny = 0   (c4 = 0)  →  y no se niega
+    no = 1   (c6 = 1)  →  señal que activa el modo shift
+ 
+Cuando estas cinco condiciones se cumplen, el bit f (c5) determina
+la dirección del desplazamiento:
+ 
+    f = 0   (c5 = 0)  →  Shift LEFT  (desplazamiento a la izquierda un bit)
+    f = 1   (c5 = 1)  →  Shift RIGHT (desplazamiento a la derecha un bit)
+
+===============================================================================
+ DETECCION DE REGISTROS PARA SHIFT EN CPU
+================================================================================
+    
+En la CPU, si no realizamos un cambio, el registro D es el que va a quedar desplazado siempre y no hay manera de 
+desplazar A. Por lo tanto vamos a utilizar el bit 14 (el cual no es usado ) para determinar entre los registros.
+
+Si el bit 14 = 0
+Es usado el D
+
+Si el bit 14 = 1
+Es entre A y M
+
+Pero como sabemos cual usamos? A o M?
+
+En la CPU tenemos el aBit el cual decide entre los dos.
+
+===============================================================================
+ SHIFTS:
+================================================================================
 
 
 
-dest=reg >> 1   111 a 0 0 0 0 1 1 d1 d2 d3 j1 j2 j3  // desplazamiento a la derecha 
+── SHIFT LEFT:  dest = reg << 1 ───────────────────────────────────────────────
+ 
+  Bits de control ALU:  zx=0  nx=0  zy=0  ny=0  f=0  no=1
+                        c1=0  c2=0  c3=0  c4=0  c5=0  c6=1  →  000001
+ 
+  Formato completo:
+    111  a  0 0 0 0 0 1  d1 d2 d3  j1 j2 j3
+    ^^^  ^  ^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^
+     |   |      |            |
+     |   |      |            └─ destino y condición de salto
+     |   |      └─ bits de control (zx nx zy ny f no) = 000001
+     |   └─ bit 'a' (0 = registro A, 1 = memoria M)
+     └─ marcador tipo C, el bit 14 (0=D, 1=A/M)
+ 
+── SHIFT RIGHT: dest = reg >> 1 ───────────────────────────────────────────────
+ 
+  Bits de control ALU:  zx=0  nx=0  zy=0  ny=0  f=1  no=1
+                        c1=0  c2=0  c3=0  c4=0  c5=1  c6=1  →  000011
+ 
+  Formato completo:
+    111  a  0 0 0 0 1 1  d1 d2 d3  j1 j2 j3
+    -------------------------------------------------
+
+
+ Instrucción    |     bit 14     |  a  | c1 c2 c3 c4 c5 c6  | Diferencia clave                                                                     |
+  ------------   -------- - --- -|-----|--------------------|-----------------
+  dest=D<<1     |       0         |  0  |  0  0  0  0  0  1  | f=0 → shift izquierda, bit14=0 es registro D                                        |
+  dest=D>>1     |       0         |  0  |  0  0  0  0  1  1  | f=1 → shift derecha, bit14=0 es registro D                                          |
+  dest=M<<1     |       1         |  1  |  0  0  0  0  0  1  | f=0 → shift izquierda, bit14=1 es registro A o M, a=1 selecciona M                  |
+  dest=M>>1     |       1         |  1  |  0  0  0  0  1  1  | f=1 → shift derecha, bit14=1 es registro A o M , a=1 selecciona M                   |
+ dest = A << 1  |       1        |   0 |  0  0  0  0  0  1  | f=0 → shift izquierda, bit14=1 es registro A o M, a= 0 selecciona A                  |
+ dest = A >> 1  |       1        |   0 |  0  0  0  0  1  1  | f=1 → shift derecha, bit14=1 es registro A o M, a= 0 selecciona A                    | 

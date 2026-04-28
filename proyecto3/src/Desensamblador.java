@@ -56,7 +56,8 @@ public class Desensamblador {
                     resultadoASM = "@" + valorDecimal;
                 } 
                 // --- TIPO C ---
-                else if (linea.startsWith("111")) {
+                else if (linea.startsWith("1")) {
+                    String b14 = linea.substring(1, 2);
                     String aBit = linea.substring(3, 4);
                     String cPart = linea.substring(4, 10);
                     String dPart = linea.substring(10, 13);
@@ -78,7 +79,7 @@ public class Desensamblador {
                     // El bit 'a' determina el registro: 0 = D, 1 = M
                     if (cPart.equals("000001") || cPart.equals("000011")) {
                         String direccion = cPart.equals("000001") ? "<<1" : ">>1";
-                        String registro  = aBit.equals("1")       ? "M"   : "D";
+                        String registro  = (b14.equals("0")) ? "D" : (aBit.equals("1") ? "M" : "A");
                         comp = registro + direccion;
                     } else {
                         int idxC = buscarIndice(compBits, cPart);

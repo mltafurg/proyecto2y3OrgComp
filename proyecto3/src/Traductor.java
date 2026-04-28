@@ -64,10 +64,17 @@ public class Traductor {
         // Construcción del binario final:
         // 111 (Cabecera) + a (Bit de memoria) + cccccc (Comp) + ddd (Dest) + jjj (Jump)
         
-        String inicio = "111"; // siempre en una inst C el inicio es 111
+        String inicio = "1"; // siempre en una inst C el inicio es 111 pero como el bit 14 lo usamos para 
+        // decidir si es A o M, entonces el inicio es solo 1 y el bit 14 se asigna despues dependiendo del comp.
 
 
         String aBit; // aqui verificamos si 
+        String bit14 = "1";  // Por defecto 1 (para A/M)
+        String bit13 = "1";  // Bit de relleno (unused)
+
+        if (comp.startsWith("D") && (comp.contains("<<") || comp.contains(">>"))) {
+        bit14 = "0";
+    }
         
         if (comp.contains("M")) {
             aBit = "1";
@@ -79,7 +86,7 @@ public class Traductor {
         String parteD = destBits[dIdx];
         String parteJ = jumpBits[jIdx];
 
-        return inicio + aBit + parteC + parteD + parteJ;
+        return inicio + bit14 + "1" + bit13 + aBit + parteC + parteD + parteJ;
     }
 
     public String traducirA(String symbol, tablaSimbolos table) {

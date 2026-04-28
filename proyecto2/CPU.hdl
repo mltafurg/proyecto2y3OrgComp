@@ -32,10 +32,11 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    //operacion para encontrar el MSB y los demas bits para la inst C
+    //operacion para encontrar el MSB y los demas bits para la inst C, ademas de seleccionar el bit que decide si 
+    // realizamos shift en A o D que es el bit 14
    Add16(a=instruction , b= false,  
-   out[15]=selMSB,out[12]=aBit, out[11]=zx, out[10]=nx, out[9]=zy, out[8]=ny, out[7]=f, 
-   out[6]=no, out[5]=RegA, out[4]=RegC, out[3]=mWrite, out[2]=j1, 
+   out[15]=selMSB, out[14]=selAorD, out[12]=aBit, out[11]=zx, out[10]=nx, out[9]=zy, out[8]=ny, out[7]=f, 
+   out[6]=no, out[5]=RegA, out[4]=RegD, out[3]=mWrite, out[2]=j1, 
    out[1]=j2, out[0]=j3,out=numSame ); 
    
    // el tercer bit dice si se escribe M o no, pues es el destino. PERO SOLO PARA INST C
@@ -62,21 +63,28 @@ CHIP CPU {
    //para guardar en el registro d, debemos verificar si es una inst C o 
    // la inst A es un numero que tiene 1, en ese bit
 
-   And(a=selMSB , b=RegC , out=loadRegC );
+   And(a=selMSB , b=RegD , out=loadRegD );
 
-   DRegister(in=resultALU , load=loadRegC , out=xALU ); //registro D
+   DRegister(in=resultALU , load=loadRegD , out=xALU ); //registro D
 
    Mux16(a=dataA , b= inM, sel=aBit , out= yALU); //seleccion datos (A o M ) dependiendo de dest
-   
+
+
+  //pero como sabemos que tipo desplazamos? si el A y M estan en el yALU pero solo lo diferenciamos cuando hacemos
+  // operaciones de dos operandos, entonces ahi entra el bit 14 que decide si es D o A o M el que hacemos shift.
+
+  Mux16(a=xALU, b=yALU, sel=selAorD, out=imputALU); // si el bit 14 es 0, hacemos shift a D
+  // si es el bit 14 es 1 elige A o M dependiendo del aBit.el cual hicimos esa decsion antes . 
 
 
 
   //Si es inst C, 
 
-  // calculo del comp, recibiendo el valor del MUX de datos (A o M) y del registro D
+  // calculo del comp, recibiendo el valor del MUX de datos (A o M) y del registro D, y aplicando 
+  // tambien la logica del shifter
 
    ALU(
-    x=xALU, y=yALU, 
+    x=inputALU, y=yALU, 
     zx=zx, nx=nx, zy=zy, ny=ny, f=f, no=no, 
     out=resultALU, out=outM, 
     zr=zr, ng=ng, 
