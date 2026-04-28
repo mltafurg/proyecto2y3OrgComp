@@ -1,0 +1,47 @@
+/*********
+* Shifter.hdl – Desplazamiento de un bit a la izquierda o derecha
+* Autor 1:
+* Autor 2:
+*
+* Implementación del siguiente algoritmo:
+* if (direction == 0){
+* out[0] = 0;
+* for(i=2; i < 16; i++)
+* out[i] = in[i-1];
+* }
+* else{
+* out[15] = 0;
+* for(i=1; i < 15; i++)
+* out[i] = in[i-1];
+* }
+*********/
+
+CHIP Shifter {
+ IN in[16], // Dato a correr
+ direction; // Dirección de corrimiento
+ // 0 = izquierda, 1 = derecha
+ OUT out[16], // Dato corrido en la dirección solicitada
+ result; // bit que sale por el extremo
+ // correspondiente
+ PARTS:
+ // primero realizamos los shifts para despues el out de cada uno de ellos va en un Mux para deidir
+ // dependiendo de la direccion cual es el out correcto.
+
+ // primero hacemos el shift a la izq (mult por 2). este shift es lo mismo que 
+ // sumar por si mismo el numero, pues por el carry que se produce, este genera una corrida en cada bit de la suma
+ // (pues se genera un carry en cada bit)
+Add16(a=in, b=in, out=shiftL );
+
+// con el shift a la derecha (dividir por 2), es recableando el in que nos dieron,
+// en este shift el MSB se convierte en 0 siempre, y vamos desplazando cada bit a la derecha el bit 0 ahora es el bit 1
+// el bit 1 en bit 2 etc. esto lo podemos hacer atraves de un Mux16, el cual nos ayuda a recablear cada bit
+// siempre se va a elegir la opcion del in pues el sel es false. (sel= 0, out = a)
+Mux16(a[0..14]=in[1..15], a[15]=false, b=false, sel=false, out=shiftR);
+
+// aqui con el valor de direction se eligue cual shift se entrega como out
+Mux16(a=shiftL, b=shiftR, sel=direction, out=out);
+// como sacamos el result???? en el shift izq el bit que sale es el MSB mientras tanto en la dercha es el LSB
+// usamos el direction como el anterior mux para realizar el result.
+Mux(a=in[15], b=in[0], sel=direction, out=result);
+}
+

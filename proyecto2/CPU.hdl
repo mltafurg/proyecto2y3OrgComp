@@ -1,0 +1,159 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/CPU.hdl
+/**
+ * The Hack Central Processing unit (CPU).
+ * Parses the binary code in the instruction input and executes it according to the
+ * Hack machine language specification. In the case of a C-instruction, computes the
+ * function specified by the instruction. If the instruction specifies to read a memory
+ * value, the inM input is expected to contain this value. If the instruction specifies
+ * to write a value to the memory, sets the outM output to this value, sets the addressM
+ * output to the target address, and asserts the writeM output (when writeM = 0, any
+ * value may appear in outM).
+ * If the reset input is 0, computes the address of the next instruction and sets the
+ * pc output to that value. If the reset input is 1, sets pc to 0.
+ * Note: The outM and writeM outputs are combinational: they are affected by the
+ * instruction's execution during the current cycle. The addressM and pc outputs are
+ * clocked: although they are affected by the instruction's execution, they commit to
+ * their new values only in the next cycle.
+ */
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    //operacion para encontrar el MSB y los demas bits para la inst C
+   Add16(a=instruction , b= false,  
+   out[15]=selMSB,out[12]=aBit, out[11]=zx, out[10]=nx, out[9]=zy, out[8]=ny, out[7]=f, 
+   out[6]=no, out[5]=RegA, out[4]=RegC, out[3]=mWrite, out[2]=j1, 
+   out[1]=j2, out[0]=j3,out=numSame ); 
+   
+   // el tercer bit dice si se escribe M o no, pues es el destino. PERO SOLO PARA INST C
+   // entonces verificamos eso
+   And(a=selMSB , b=mWrite , out=writeM );
+
+   //Si en el registro se guarda datos calculados o datos de la inst A
+   Mux16(a=instruction , b=resultALU , sel=selMSB , out=aORc );
+
+   //SI ES INST A, necesitamos negar el MSB (siempre es 0) para que sea 1 
+   // y el register A guarde ese dato
+   Not(in=selMSB , out=notMSB );
+
+   // sin embargo la inst c tambien puede guardar en ese registro (debido al destino)
+   // unimos el sel del registro A con el bit de destino del inst c
+   And(a=selMSB , b=RegA , out=loadRegA );
+   Or(a=notMSB , b=loadRegA , out=totalLoadA );
+
+
+
+   
+   ARegister(in=aORc , load=totalLoadA, out=dataA, out[0..14] =addressM ); //registro A
+
+   //para guardar en el registro d, debemos verificar si es una inst C o 
+   // la inst A es un numero que tiene 1, en ese bit
+
+   And(a=selMSB , b=RegC , out=loadRegC );
+
+   DRegister(in=resultALU , load=loadRegC , out=xALU ); //registro D
+
+   Mux16(a=dataA , b= inM, sel=aBit , out= yALU); //seleccion datos (A o M ) dependiendo de dest
+   
+
+
+
+  //Si es inst C, 
+
+  // calculo del comp, recibiendo el valor del MUX de datos (A o M) y del registro D
+
+   ALU(
+    x=xALU, y=yALU, 
+    zx=zx, nx=nx, zy=zy, ny=ny, f=f, no=no, 
+    out=resultALU, out=outM, 
+    zr=zr, ng=ng, 
+    result=shiftCarry // usamos la ALU con shift para obtener el resultado del shift. 
+ );
+  // Logica jump
+  //realizamos la verificacion de los bits del jump pues solo son usados si son inst C
+  And(a=j1 , b=selMSB , out=jump1 );
+  And(a=j2 , b=selMSB , out=jump2 );
+  And(a=j3 , b=selMSB , out=jump3 );
+
+  // negamos los bits necesarios para cada jump
+     
+  Not(in= jump1 , out=notJ1 );
+  Not(in=jump2 , out=notJ2 );
+  Not(in= jump3, out=notJ3 );
+  Not(in=zr , out=notZR );
+  Not(in=ng , out= notNG);
+
+  //JGT
+  //para cada jump hacemos dos cosas:
+  // 1. verificamos si estan los bits del salto presente (ej: 001)
+  And(a=notJ1 , b=notJ2 , out= notJ1ANDnotJ2 );
+  And(a=jump3 , b=notJ1ANDnotJ2 , out=hasJGT);
+  // 2. verificamos si estan las flags correctas (para que se cumpla cada caso)
+  And(a= notZR, b=notNG  , out= isPositive );
+  And(a= hasJGT, b= isPositive , out=JGT );  
+
+  //JEQ
+  And(a=notJ1 , b=jump2 , out=notJ1ANDJ2 );
+  And(a=notJ3 , b=notJ1ANDJ2 , out=hasJEQ );
+  And(a= zr, b=notNG  , out= isEqual );
+  And(a= hasJEQ, b= isEqual , out=JEQ );
+
+  //JGE
+
+  And(a= notJ1ANDJ2, b= jump3 , out=hasJGE );
+  And(a=hasJGE , b=notNG , out=JGE );
+
+  //JLT
+  And(a=jump1 , b=notJ2 , out= J1ANDnotJ2 );
+  And(a=notJ3 , b=J1ANDnotJ2 , out=hasJLT );
+  And(a= notZR, b=ng  , out= isNegative );
+  And(a= isNegative, b= hasJLT , out=JLT );  
+
+
+  //JNE
+  And(a=jump3 , b= J1ANDnotJ2, out= hasJNE);
+  And(a=notZR , b=hasJNE , out=JNE );
+
+  //JLE
+  And(a= jump1, b=jump2 , out=J1andJ2 );
+  And(a=J1andJ2 , b=notJ3 , out= hasJLE );
+  Or(a=ng, b=zr, out=isLessOrEqual);
+  And(a=hasJLE, b=isLessOrEqual, out=JLE);
+
+
+  //JMP
+  And(a=J1andJ2 , b=jump3 , out=JMP );
+
+  //NULL!
+  // EL NULL ES UN RESULTADO CONCEPTUAL, NO SE APLICA, PUES NO TENDRIA SENTIDO
+  // AGREGARLO A LA LOGICA DE JUMP, PUES SI NO HAY JUMP, NO SE SALTA, SE INCREMENTA EL PC NORMALMENTE
+  
+
+  Or(a=JGT , b=JEQ , out=or1 );
+  Or(a=JGE , b=JLT , out=or2 );
+  Or(a=JNE , b=JLE , out=or3 );
+  Or(a=JMP , b=or3 , out=or4 );
+  Or(a= or1, b=or2 , out=or5 );
+  Or(a=or5 , b= or4, out=orFinal );
+   // este es el load del pc, pues dice si seguir a la dir de A
+
+  Not(in= orFinal , out=inc ); // la negacion del load, es el increase pues si el load es 0 debe
+                                      // debe incrementarse (inc=1)
+
+   PC(in=dataA , load=orFinal , inc=inc , reset=reset , out[0..14]=pc );        
+   //el out pc de la CPU devuelve 15 bits pero el out del PC da 16, asi que recortamos cables                           
+ 	
+}

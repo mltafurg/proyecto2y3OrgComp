@@ -1,0 +1,93 @@
+/*********
+* ALU.hdl – ALU (Arithmetic Logic Unit):
+* Computes out = one of the following functions:
+* 0, 1, -1, x, y, !x, !y, -x, -y,
+* x + 1, y + 1, x - 1, y - 1,
+* x + y, x - y, y - x,
+* x & y, x | y
+* Autor 1:
+* Autor 2:
+*********/
+CHIP ALU {
+ IN
+ x[16], y[16], // 16-bit inputs
+ zx, // zero the x input?
+ nx, // negate the x input?
+ zy, // zero the y input?
+ ny, // negate the y input?
+ f, // compute (out = x + y) or (out = x & y)? or
+ // ((shift left if (zx=nx=zy=ny=0 and f = 0 and
+ // no = 1)) or (shift right if (zx=nx=zy=ny=0 and
+ // f = 1 and no = 1)))
+ no; // negate the out output?
+ OUT
+ out[16], // 16-bit output
+ zr, // if (out == 0) equals 1, else 0
+ ng, // if (out < 0) equals 1, else 0
+ result; // if (shift left) equals in[15]
+ // if (shift right) equals in[0]
+     
+    PARTS:
+    // --- PROCESAMIENTO DE X ---
+    // zx: Si zx=1, ponemos x a 0
+    Mux16(a=x, b=false, sel=zx, out=x1);
+    // nx: Si nx=1, negamos x1 (Not x)
+    Not16(in=x1, out=notx1);
+    Mux16(a=x1, b=notx1, sel=nx, out=x2);
+
+    // --- PROCESAMIENTO DE Y ---
+    // zy: Si zy=1, ponemos y a 0
+    Mux16(a=y, b=false, sel=zy, out=y1);
+    // ny: Si ny=1, negamos y1 (Not y)
+    Not16(in=y1, out=noty1);
+    Mux16(a=y1, b=noty1, sel=ny, out=y2);
+
+    // --- SELECCION DE FUNCIÓN (f) ---
+    // f: Si f=1 suma (x2 + y2), si f=0 hace AND (x2 & y2)
+    Add16(a=x2, b=y2, out=sumXY);
+    And16(a=x2, b=y2, out=andXY);
+    Mux16(a=andXY, b=sumXY, sel=f, out=fOut);
+
+    // --- PROCESAMIENTO DE SALIDA (no) Y FLAGS ---
+    // no: Si no=1, negamos el resultado final
+    Not16(in=fOut, out=notFOut);
+    
+    // SHIFTER !!!
+    // Verificar que los anteriores sean 0 ( nx, zx, ny , zy)
+    // si todos son 0, en el OR sale 0
+    Or(a=nx, b=zx, out=orX);
+    Or(a=ny, b=zy, out=orY);
+    Or(a=orX, b=orY, out=orXY);
+    // lo negamos para realizar un AND con 'no' y si da 1 significa que todo es 0 y 'no' es 1
+    Not(in=orXY, out=notOrXY);
+    And(a=true, b=no, out=andNo); // 'no' debe ser 1 para permitir el shift
+    And(a=notOrXY, b=andNo, out=allowsShift);
+
+  
+    //calculo del no
+    Mux16(a=fOut, b=notFOut, sel=no, out=outNo);
+
+    
+    // EL SHIFTER SE REALIZA EN PARALELO CON EL CALCULO DE 'no' y 'f' por eso utilizamos x2
+    // pues los valores siguientes a este solo sirven de flags para el shift
+
+    Shifter(in=x2, direction=f,out=Shift, result=result);
+
+    //AHORA, con el shifter hecho, vemos si hacemos shift o no
+    //esto se hace dependiendo del resultado de allowsShift
+
+     Mux16(a=outNo, b=Shift, sel=allowsShift, out=out, 
+     out[15]=ng,   //  sacamos el bit 15 para 'ng' 
+      out[0..7]=lowPart,     // y dividimos la salida en dos partes de 8 bits para calcular 'zr'
+      out[8..15]=highPart);    // y utilizar el 8 way en vez del or normal
+   
+
+    // --- CALCULO DE ZR (¿Es cero?) ---
+    // Si cualquier bit es 1, Or8Way devolvera 1. 
+    // Si después de pasar por ambos Or8Way y el Or final obtenemos 0, es que todo era 0.
+    Or8Way(in=lowPart, out=orLow);
+    Or8Way(in=highPart, out=orHigh);
+    Or(a=orLow, b=orHigh, out=notZr);
+    Not(in=notZr, out=zr);
+}
+    

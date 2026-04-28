@@ -1,0 +1,10 @@
+//IMPORTANTTT
+// seguimos la logica del ALU que aplicamos, donde zx, nx, zy, ny son 0 y no es 1. lo que permite 
+//que f tenga la posibilidad de elegir shift en izq o derecha dependiendo de si es 0 o 1. 
+
+
+dest=reg << 1 = 111 a 0 0 0 0 0 1 d1 d2 d3 j1 j2 j3  // desplazamiento a la izquierda
+
+
+
+dest=reg >> 1   111 a 0 0 0 0 1 1 d1 d2 d3 j1 j2 j3  // desplazamiento a la derecha 

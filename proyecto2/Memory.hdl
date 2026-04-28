@@ -1,0 +1,85 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/Memory.hdl
+/**
+ * The complete address space of the Hack computer's memory,
+ * including RAM and memory-mapped I/O. 
+ * The chip facilitates read and write operations, as follows:
+ *     Read:  out(t) = Memory[address(t)](t)
+ *     Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
+ * In words: the chip always outputs the value stored at the memory 
+ * location specified by address. If load=1, the in value is loaded 
+ * into the memory location specified by address. This value becomes 
+ * available through the out output from the next time step onward.
+ * Address space rules:
+ * Only the upper 16K+8K+1 words of the Memory chip are used. 
+ * Access to address>0x6000 is invalid and reads 0. Access to any address
+ * in the range 0x4000-0x5FFF results in accessing the screen memory 
+ * map. Access to address 0x6000 results in accessing the keyboard 
+ * memory map. The behavior in these addresses is described in the Screen
+ * and Keyboard chip specifications given in the lectures and the book.
+ */
+CHIP Memory {
+    IN in[16], load, address[15];
+    OUT out[16];
+
+    PARTS:
+
+     
+   
+    //guardar datos y mostrar datos
+    Add16(a[0..14]=address, a[15]=false , b=false , 
+    out[0..13]=ramAd, out[0..12]=scr,out[0..7]=halfAD, out=l );//separamos los datos para 
+    // cada ram pues cada uno necesita diferente tamaño
+    
+    //se divide en dos el load, con la ram y los diferentes map
+    // el ram siempre va a ser 0 en el bit 14, pues no alcanza la posicion (osea ser 1)
+    //(el numero 16383 que es el limite mayor no alcanza, si ese no alcanza
+    // los otros tampoco, pues son menores) a llegar a ese bit
+    // en cambio el map si llega
+    DMux(in=load , sel= address[14], a=ram16 , b=map );
+
+    // con ese load podemos realizar el guardado de datos de la ram
+    RAM16K(in=in , load=ram16 , address=ramAd , out=outRm );
+
+   // ahora para diferenciar el screen con el keyboard, podemos realizar lo mismo, 
+   // el screen llega a 24755, este valor que es el mayor es expresado sin el bit 13, sino desde el 12
+   //asi que con el scrren el bit 13 es 0. mientras tanto con el KB si es 1.
+    DMux(in=map, sel=address[13] , a=screen , b=keyboard );
+   
+   // con el load podemos guardar en el screen los valores del in
+    Screen(in=in , load=screen , address=scr , out=fullScreen );
+    // y realizar el out del keyboard.
+    Keyboard(out=outK );
+    
+    //Sin embargo, no hemos realizado la restrciion de que el keyboard solo puede ser 24756 y 
+    // no un numero mayor, para eso sabemos que ese valor del KB es 110 0000 0000 0000
+    // podemos ver que solo es 1 en las psociones 14 y 13, en las otras no.
+    // Asi  que con un OR comparamos el address y si en esas posicones da 0 es el address del KB
+    // y podemos al fin saber que el out del KB es correcto.
+
+     Or8Way(in=halfAD , out=or1 );
+    Or(a=address[8] , b=address[9] , out=or2 );
+    Or(a=address[10] , b=address[11] , out=or3 );
+    Or(a=address[12] , b=or3 , out=or4 );
+    Or(a=or1 , b=or2 , out=or5 );
+    Or(a= or4 , b= or5, out=selKB );
+
+   // Aqui mostramos los valores, siguendo la misma logica de las posiciones
+   //verificamos el KB
+    Mux16(a= outK, b=false , sel=selKB , out=realKb );
+
+    // con la posicion 13 miramos si es la screen o el KB que debemos leer
+
+    Mux16(a= fullScreen, b=realKb , sel=address[13] , out=outMaps );
+
+    //con la pos14 miramos si leemos la ram o el valor que tenemos del mux anterior
+    Mux16(a= outRm, b=outMaps , sel=address[14] , out=out );
+
+
+ 
+
+
+	
+}
