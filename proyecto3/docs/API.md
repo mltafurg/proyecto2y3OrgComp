@@ -52,7 +52,9 @@ bits (0 y 1).
 ● Tablas internas: Contiene los diccionarios de bits para cada operación de cómputo,
 destino y salto de la arquitectura Hack.
 
-6. Clase Desensamblador
+### 6. Clase Desensamblador
+
 Vuelve a retomar el binario a codigo asm
+
 ● Responsabilidad: Toma archivos .hack y reconstruye el código mnemónico original
 (sustituyendo etiquetas por direcciones numéricas).
