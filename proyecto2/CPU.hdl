@@ -73,7 +73,7 @@ CHIP CPU {
   //pero como sabemos que tipo desplazamos? si el A y M estan en el yALU pero solo lo diferenciamos cuando hacemos
   // operaciones de dos operandos, entonces ahi entra el bit 14 que decide si es D o A o M el que hacemos shift.
 
-  Mux16(a=xALU, b=yALU, sel=selAorD, out=imputALU); // si el bit 14 es 0, hacemos shift a D
+  Mux16(a=xALU, b=yALU, sel=selAorD, out=inputALU); // si el bit 14 es 0, hacemos shift a D
   // si es el bit 14 es 1 elige A o M dependiendo del aBit.el cual hicimos esa decsion antes . 
 
 
