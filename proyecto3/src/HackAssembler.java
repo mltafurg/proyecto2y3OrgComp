@@ -1,3 +1,9 @@
+
+/*********
+* HackAssembler.java – Es el encargado de gestionar que modo se va a utilizar (ensamblar o desamblar)
+recibe el archivo y realiza las debidas instancias de las clases con sus metodos para realizar todo el proceso.
+* Autor 1: Maria Laura Tafur
+*********/
 public class HackAssembler {
     public static void main(String[] args) {
         
@@ -18,7 +24,7 @@ public class HackAssembler {
             des.ejecutar(archivoHACK);
         } 
         
-        // --- MODO ENSAMBLADOR ORIGINAL ---
+        // --- MODO ENSAMBLADOR  ---
         else {
             String archivoASM = args[0];
             String archivoHACK = archivoASM.replace(".asm", ".hack");
