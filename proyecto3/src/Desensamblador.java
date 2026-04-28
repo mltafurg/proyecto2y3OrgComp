@@ -1,7 +1,17 @@
+/*********
+* Desensamblador.java – Se encarga de traducir del binario que el ensamblador proporciona a assembly,
+utiliza los arreglos que relaciona el nombre (el simbolo de la instruccion) con su valor en binario, es decir busca el valor de binario 
+que ya tiene y lo reemplaza con el simbolo. Para los desplazamientos, utiliza el bit 14 como selector
+para identificar si el registro es D o pertenece al bloque A/M. Ademas,valida si es un bus de 16 bits y devuelve un archivo.asm
+* Autor 1: Maria Laura Tafur
+*********/
+
+
+
 import java.io.*;
 
 public class Desensamblador {
-    // Reutilizamos los mismos datos de tu Traductor pero para el proceso inverso
+    // Reutilizamos los mismos datos del traductor
     private final String[] destNombre = {"null", "M", "D", "MD", "A", "AM", "AD", "AMD"};
     private final String[] destBits  = {"000", "001", "010", "011", "100", "101", "110", "111"};
 
