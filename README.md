@@ -1,7 +1,16 @@
-# Proyecto Organizacion de computadores
+
+# **Organización de computadores**
+**Proyecto 2 y 3**
+
+**2026-1**
+
+**Integrantes**
+
+[Maria Laura Tafur Gomez]
 
 
-## Proyecto 2
+# Proyecto 2
+
 **ALU, CPU y circuitos de soporte**
 
 ---
@@ -264,7 +273,7 @@ El `Shifter` no depende de nadie. La `ALU` lo incorpora para agregar capacidad d
 
 
 
-## Proyecto 3
+# Proyecto 3
 
 ## Las 6 clases y para qué sirve cada una
 
