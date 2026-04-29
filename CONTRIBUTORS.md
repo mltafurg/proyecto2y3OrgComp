@@ -5,8 +5,8 @@
 
  Total: 100%
 # Auto evaluacion
-| Nombre | Rol | Autoevaluacion | % Contrib |
-|--------------|---------|--------------------------|-----------|
-| Maria Laura Tafur| Desarrollador | Considero que | 100% |
+| Nombre | Rol | Autoevaluacion |  
+|--------------|---------|--------------------------|
+| Maria Laura Tafur| Desarrollador | Considero que he realizado mi trabajo de manera eficiente y completa del proyecto 2 y 3, con buenas practicas de codigo.   | 
 
- Total: 100%
+
