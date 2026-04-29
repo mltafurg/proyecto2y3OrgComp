@@ -19,23 +19,6 @@ Cada uno cumple una función específica, y juntos forman una cadena que va desd
 
 ## Visión general — Cómo se conectan los cinco chips
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        COMPUTER                             │
-│                                                             │
-│   ┌──────────┐   instrucción   ┌──────────┐                │
-│   │  ROM32K  │────────────────►│          │  outM  ┌──────┐│
-│   │(programa)│                 │   CPU    │───────►│      ││
-│   └──────────┘   ◄─────────── │          │◄───────│MEMORY││
-│                      pc        │  ┌─────┐ │  inM   │      ││
-│                                │  │ ALU │ │        └──────┘│
-│                                │  │  ┌──┤ │                │
-│                                │  │  │Sh│ │                │
-│                                │  └──┴──┘ │                │
-│                                └──────────┘                │
-└─────────────────────────────────────────────────────────────┘
-```
-
 El flujo de datos es un ciclo continuo:
 
 1. La **ROM** le dice a la **CPU** qué instrucción ejecutar.
@@ -288,7 +271,7 @@ Shifter
                     └── También conecta: ROM32K y Memory
 ```
 
-El `Shifter` es el más bajo en la jerarquía — no depende de nadie. La `ALU` lo incorpora para agregar capacidad de desplazamiento. La `CPU` usa la `ALU` como su motor de cálculo. La `Memory` es el banco de datos. Y el `Computer` es el integrador que une todo en un sistema funcional.
+El `Shifter` no depende de nadie. La `ALU` lo incorpora para agregar capacidad de desplazamiento. La `CPU` usa la `ALU` como su motor de cálculo. La `Memory` es el banco de datos. Y el `Computer` es el integrador que une todo en un sistema funcional.
 
 
 
