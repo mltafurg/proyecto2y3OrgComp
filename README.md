@@ -265,3 +265,172 @@ El `Shifter` no depende de nadie. La `ALU` lo incorpora para agregar capacidad d
 
 
 ## Proyecto 3
+
+## Las 6 clases y para qué sirve cada una
+
+---
+
+### 1. `HackAssembler.java` 
+
+
+Esta es la clase que arranca todo. Cuando el usuario ejecuta el programa desde la terminal, **esta clase es la primera en ejecutarse**.
+
+Su única responsabilidad es leer los argumentos que el usuario escribió y decidir qué modo usar:
+
+- Si el usuario pone `-d` antes del archivo → activa el modo **desensamblador**
+- Si no → activa el modo **ensamblador**
+
+Una vez tomada esa decisión, delega todo el trabajo a las otras clases. No traduce, no lee archivos, no analiza nada por sí sola. Es como el gerente que reparte tareas.
+
+**Ejemplo de uso:**
+```bash
+java HackAssembler Programa.asm       # Ensambla (ASM → binario)
+java HackAssembler -d Programa.hack   # Desensambla (binario → ASM)
+```
+
+---
+
+### 2. `Archivo.java` — El lector y escritor
+
+Esta clase se encarga de **abrir y recorrer el archivo de entrada** línea por línea. También escribe el archivo de salida.
+
+Hace **dos recorridos distintos** al archivo, y es importante entender por qué:
+
+#### Primera pasada (`primeraPasada`)
+Solo busca **etiquetas** — esas líneas con forma `(LOOP)` o `(END)`. Cuando encuentra una, la registra en la tabla de símbolos junto con la dirección de memoria donde va a vivir esa etiqueta. No traduce nada todavía.
+
+¿Por qué no traducir de una? Porque una etiqueta puede referenciarse **antes** de que aparezca en el archivo. Si una instrucción en la línea 5 dice `@LOOP` pero `(LOOP)` está en la línea 40, en la primera lectura no sabríamos todavía cuál es la dirección de LOOP. La primera pasada resuelve eso.
+
+#### Segunda pasada (`segundaPasada`)
+Aquí sí se traduce todo. Ya con la tabla de símbolos completa, se recorre el archivo de nuevo, se limpia cada línea (quitando comentarios y espacios), se analiza su tipo con el `Parser`, y se traduce con el `Traductor`. El resultado binario se escribe en el archivo `.hack`.
+
+También limpia las líneas: elimina comentarios (`//`) y espacios sobrantes.
+
+---
+
+### 3. `Parser.java` 
+
+Esta clase **analiza una línea** de código assembly y determina qué tipo de instrucción es.
+
+Usa **expresiones regulares** (patrones de texto) para reconocer tres tipos:
+
+| Tipo | Ejemplo | Descripción |
+|------|---------|-------------|
+| `A` | `@100` o `@LOOP` | Instrucción de dirección |
+| `C` | `D=M+1;JGT` | Instrucción de cómputo |
+| `L` | `(LOOP)` | Etiqueta (no es una instrucción real, es una marca) |
+
+Si la línea no encaja en ningún patrón → tipo `E` (error de sintaxis).
+
+Una vez identificado el tipo, el Parser también **extrae las partes** de la instrucción:
+- Para tipo `A` o `L`: extrae el símbolo (`@LOOP` → `LOOP`)
+- Para tipo `C`: extrae por separado el destino (`dest`), la operación (`comp`) y el salto (`jump`). Por ejemplo `AMD=D+1;JGT` se divide en:
+  - `dest` = `AMD`
+  - `comp` = `D+1`
+  - `jump` = `JGT`
+
+---
+
+### 4. `tablaSimbolos.java` — El directorio de nombres
+
+Esta clase es como una **agenda de contactos**: guarda la relación entre nombres (símbolos) y sus direcciones de memoria.
+
+Al crearse, ya viene precargada con los símbolos predefinidos del sistema HACK:
+- Los registros del `R0` al `R15` (apuntan a las primeras 16 posiciones de memoria RAM)
+- Variables especiales como `SP`, `LCL`, `ARG`
+- Periféricos como `SCREEN` (dirección 16384) y `KBD` (dirección 24576)
+
+Cuando durante la traducción aparece un símbolo que no existe en la tabla (como una variable `@contador` definida por el programador), la tabla lo **agrega automáticamente** asignándole la siguiente dirección disponible a partir de la posición 16.
+
+Sus dos operaciones principales:
+- `addEntry(símbolo, dirección)` → agrega un par
+- `getAddress(símbolo)` → busca la dirección de un símbolo; si no existe, lo crea como variable nueva
+
+---
+
+### 5. `Traductor.java` — El convertidor a binario
+
+Esta clase hace la traducción real: toma los pedazos de una instrucción y los convierte a los 16 bits que el procesador HACK entiende.
+
+Usa **tablas paralelas**: un arreglo con los nombres en assembly y otro con su equivalente en binario, en el mismo orden. Para traducir, busca el nombre en el primer arreglo y usa el mismo índice para obtener el binario del segundo.
+
+#### Instrucción A (`traducirA`)
+- Si el símbolo es un número (ej: `@42`) → lo convierte directamente a binario de 16 bits, comenzando siempre con `0`.
+- Si es un símbolo (ej: `@LOOP`) → lo busca en la tabla de símbolos para obtener su dirección, luego convierte esa dirección a binario.
+
+#### Instrucción C (`traducirC`)
+El formato binario de una instrucción C es: `1 [bit14] 1 [a] [cccccc] [ddd] [jjj]`
+
+Donde:
+- `bit14` indica si la operación usa desplazamientos o no
+- `a` indica si el cómputo usa `A` o `M` (memoria)
+- `cccccc` = los 6 bits del cómputo
+- `ddd` = 3 bits del destino
+- `jjj` = 3 bits del salto
+
+Hay lógica especial para las instrucciones de desplazamiento (`<<1`, `>>1`) que se codifican de forma diferente.
+
+---
+
+### 6. `Desensamblador.java` — El proceso inverso
+
+Esta clase hace exactamente lo contrario al ensamblador: toma un archivo `.hack` (binario) y lo convierte de vuelta a assembly legible.
+
+El proceso es:
+1. Lee el archivo línea por línea
+2. Valida que cada línea sea exactamente 16 bits de ceros y unos
+3. Si el primer bit es `0` → es instrucción A → convierte los 15 bits restantes a decimal y escribe `@<número>`
+4. Si el primer bit es `1` → es instrucción C → descompone los 16 bits en sus partes y busca a cuál símbolo de assembly corresponde cada segmento
+
+Usa las mismas tablas que el `Traductor`, pero al revés: busca el patrón de bits y devuelve el símbolo.
+
+Para los desplazamientos (`<<1` y `>>1`), usa el **bit 14** como indicador del registro involucrado (D, A o M).
+
+Si alguna línea tiene error (longitud incorrecta, caracteres inválidos, bits desconocidos), borra el archivo de salida y reporta el error.
+
+---
+
+## Cómo se relacionan entre sí
+
+```
+Usuario
+   ↓
+HackAssembler  ←── Decide el modo (ensamblar o desensamblar)
+   ↓                            ↓
+Archivo                    Desensamblador
+(lee .asm,                (lee .hack,
+ limpia líneas,            valida bits,
+ escribe .hack)            escribe .asm)
+   ↓
+   ├── Parser         ← analiza cada línea y extrae sus partes
+   ├── tablaSimbolos  ← guarda etiquetas y variables con sus direcciones
+   └── Traductor      ← convierte partes de instrucción a binario
+```
+
+### El flujo completo al ensamblar:
+
+1. `HackAssembler` detecta que es modo ensamblado y llama a `Archivo`
+2. `Archivo.primeraPasada()` recorre el archivo, usa `Parser` para detectar etiquetas (`L`) y las agrega a `tablaSimbolos`
+3. `Archivo.segundaPasada()` recorre el archivo de nuevo, usa `Parser` para identificar y descomponer cada instrucción
+4. Si es instrucción `A` → `Traductor.traducirA()` consulta `tablaSimbolos` y genera el binario
+5. Si es instrucción `C` → `Traductor.traducirC()` combina dest + comp + jump y genera el binario
+6. Cada línea traducida se escribe en el archivo `.hack`
+
+### El flujo al desensamblar:
+
+1. `HackAssembler` detecta la bandera `-d` y crea un `Desensamblador`
+2. `Desensamblador.ejecutar()` lee línea por línea el `.hack`, valida cada una y la traduce de vuelta a assembly usando sus tablas internas inversas
+3. El resultado se guarda en un archivo con sufijo `Dis.asm`
+
+---
+
+## Resumen 
+
+| Clase | Rol |
+|-------|-----|
+| `HackAssembler` | Punto de entrada; decide qué modo usar |
+| `Archivo` | Lee el `.asm`, limpia las líneas y coordina las dos pasadas |
+| `Parser` | Identifica el tipo de cada instrucción y extrae sus partes |
+| `tablaSimbolos` | Guarda la relación nombre ↔ dirección de memoria |
+| `Traductor` | Convierte instrucciones A y C a binario de 16 bits |
+| `Desensamblador` | Convierte binario `.hack` de vuelta a assembly |
