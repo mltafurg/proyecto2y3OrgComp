@@ -2,18 +2,7 @@
 
 
 ## Proyecto 2
-# Computador Hack — Documentación del Proyecto
-
-**Organización de Computadores · 2026-1**  
-**Proyecto 2 — ALU, CPU y circuitos de soporte**
-
----
-
-## ¿Qué es esto?
-
-Este proyecto implementa un computador completo desde cero usando HDL (Hardware Description Language), el lenguaje de descripción de hardware de la plataforma Nand2Tetris. El computador que construimos se llama **Hack** y está compuesto por cinco circuitos que trabajan juntos: `Shifter`, `ALU`, `Memory`, `CPU` y `Computer`.
-
-Cada uno cumple una función específica, y juntos forman una cadena que va desde las operaciones matemáticas más básicas hasta la ejecución completa de un programa.
+**ALU, CPU y circuitos de soporte**
 
 ---
 
@@ -38,7 +27,7 @@ El flujo de datos es un ciclo continuo:
 Toma un número de 16 bits y lo desplaza un bit hacia la izquierda o hacia la derecha, dependiendo de una señal de control llamada `direction`.
 
 - **Desplazar a la izquierda** equivale a multiplicar el número por 2.
-- **Desplazar a la derecha** equivale a dividir el número por 2 (redondeando hacia abajo).
+- **Desplazar a la derecha** equivale a dividir el número por 2.
 
 ### Entradas y salidas
 
