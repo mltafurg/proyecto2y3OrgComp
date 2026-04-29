@@ -16,7 +16,7 @@ public class Parser {
   
 
 
-    // 1. Definición de los moldes (Regex) - Usamos tus versiones pulidas
+    // 1. Definición de los moldes (Regex) 
     private static final Pattern REGEX_A = Pattern.compile("^@([a-zA-Z0-9_.$:]+)$");
     private static final Pattern REGEX_L = Pattern.compile("^\\(([a-zA-Z0-9_.$:]+)\\)$");
     
