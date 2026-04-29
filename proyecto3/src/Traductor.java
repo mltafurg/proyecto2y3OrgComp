@@ -66,15 +66,26 @@ public class Traductor {
         
         String inicio = "1"; // siempre en una inst C el inicio es 111 pero como el bit 14 lo usamos para 
         // decidir si es A o M, entonces el inicio es solo 1 y el bit 14 se asigna despues dependiendo del comp.
+        String bit13 = "1";
 
-
-        String aBit; // aqui verificamos si 
-        String bit14 = "1";  // Por defecto 1 (para A/M)
-        String bit13 = "1";  // Bit de relleno (unused)
-
-        if (comp.startsWith("D") && (comp.contains("<<") || comp.contains(">>"))) {
-        bit14 = "0";
-    }
+        String bit14;
+        String aBit; 
+         //LOGICA DEL BIT 14
+       // 1. Desplazamientos: Si es A o M, bit14=1. Si es D, bit14=0.
+        if (comp.contains("A<<") || comp.contains("M<<") || comp.contains("A>>") || comp.contains("M>>")) {
+            bit14 = "1";
+        } else if (comp.contains("D<<") || comp.contains("D>>")) {
+            bit14 = "0";
+        } 
+        // 2. Operaciones normales donde A o M se necesitan aislar del D
+        else if (!comp.contains("D") && (comp.contains("A") || comp.contains("M"))) {
+            // Ejemplo: M=A, A=M, M=M+1. Aquí no necesitamos a D, y si ponemos bit14=1, A/M entra a la ALU.
+            bit14 = "1";
+        } 
+        // 3. Todo lo demás (D+M, D=A, saltos, 0, 1, -1) usa D por defecto
+        else {
+            bit14 = "0";
+        }
         
         if (comp.contains("M")) {
             aBit = "1";
@@ -86,7 +97,7 @@ public class Traductor {
         String parteD = destBits[dIdx];
         String parteJ = jumpBits[jIdx];
 
-        return inicio + bit14 + "1" + bit13 + aBit + parteC + parteD + parteJ;
+        return inicio + bit14 + bit13 + aBit + parteC + parteD + parteJ;
     }
 
     public String traducirA(String symbol, tablaSimbolos table) {
